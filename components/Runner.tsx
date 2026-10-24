@@ -64,7 +64,7 @@ export function Runner({
         />
       </div>
 
-      <div className="flex flex-1 flex-col justify-center gap-5 px-1 pt-2">
+      <div className="flex flex-1 flex-col justify-center gap-6 px-1 pt-2">
         <p
           className={`text-center text-xs uppercase tracking-[0.16em] ${
             isRest ? "text-accent" : "text-secondary"
@@ -74,7 +74,7 @@ export function Runner({
         </p>
 
         <p
-          className={`text-center font-mono text-[clamp(3.25rem,17vw,5.25rem)] leading-none tabular-nums tracking-tight ${
+          className={`text-center font-mono text-[clamp(4.75rem,26vw,7.5rem)] leading-[0.9] tabular-nums tracking-tight ${
             isRest ? "text-accent" : "text-foreground"
           }`}
         >
@@ -84,15 +84,38 @@ export function Runner({
         {!isDone &&
           clock.config.mode === "workout" &&
           segment.phase !== "prep" && (
-            <p className="text-center text-sm leading-relaxed text-secondary">
-              Round {segment.roundIndex} of {segment.roundTotal}
+            <div className="flex w-full flex-col gap-4 px-2">
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-[0.14em] text-secondary">
+                  Round
+                </p>
+                <p className="mt-1 font-mono tabular-nums leading-none">
+                  <span className="text-4xl font-medium text-foreground">
+                    {segment.roundIndex}
+                  </span>
+                  <span className="text-xl text-secondary">
+                    {" "}
+                    / {segment.roundTotal}
+                  </span>
+                </p>
+              </div>
               {segment.blockTotal > 1 && (
-                <>
-                  {" "}
-                  · Block {segment.blockIndex} of {segment.blockTotal}
-                </>
+                <div className="text-center">
+                  <p className="text-xs uppercase tracking-[0.14em] text-secondary">
+                    Block
+                  </p>
+                  <p className="mt-1 font-mono tabular-nums leading-none">
+                    <span className="text-4xl font-medium text-foreground">
+                      {segment.blockIndex}
+                    </span>
+                    <span className="text-xl text-secondary">
+                      {" "}
+                      / {segment.blockTotal}
+                    </span>
+                  </p>
+                </div>
               )}
-            </p>
+            </div>
           )}
 
         {!isDone && nextLabel && (

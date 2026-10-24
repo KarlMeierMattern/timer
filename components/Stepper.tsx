@@ -7,6 +7,7 @@ interface StepperProps {
   onIncrease: () => void;
   decreaseDisabled?: boolean;
   increaseDisabled?: boolean;
+  isLast?: boolean;
 }
 
 export function Stepper({
@@ -16,23 +17,28 @@ export function Stepper({
   onIncrease,
   decreaseDisabled,
   increaseDisabled,
+  isLast,
 }: StepperProps) {
   return (
-    <div className="flex items-center justify-between gap-3 py-3 border-b border-border">
+    <div
+      className={`flex items-center justify-between gap-4 py-4 ${
+        isLast ? "" : "border-b border-border"
+      }`}
+    >
       <span className="text-xs uppercase tracking-[0.12em] text-secondary">
         {label}
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         <button
           type="button"
           aria-label={`Decrease ${label}`}
           disabled={decreaseDisabled}
           onClick={onDecrease}
-          className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-lg text-foreground disabled:opacity-30"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-xl leading-none text-foreground disabled:opacity-30"
         >
           −
         </button>
-        <span className="min-w-[4.5rem] text-center font-mono text-base tabular-nums">
+        <span className="min-w-[5rem] text-center font-mono text-base tabular-nums">
           {displayValue}
         </span>
         <button
@@ -40,7 +46,7 @@ export function Stepper({
           aria-label={`Increase ${label}`}
           disabled={increaseDisabled}
           onClick={onIncrease}
-          className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-lg text-foreground disabled:opacity-30"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-xl leading-none text-foreground disabled:opacity-30"
         >
           +
         </button>

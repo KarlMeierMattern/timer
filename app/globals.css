@@ -10,16 +10,6 @@
   color-scheme: light;
 }
 
-html[data-theme="dark"] {
-  --background: #000000;
-  --foreground: #ffffff;
-  --secondary: #888888;
-  --border: #333333;
-  --surface: #111111;
-  --accent: #0070f3;
-  color-scheme: dark;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

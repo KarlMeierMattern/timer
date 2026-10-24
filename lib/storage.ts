@@ -1,14 +1,12 @@
 import { DEFAULT_EMOM } from "./presets";
-import type { Preferences, SavedWorkout, WorkoutConfig } from "./types";
+import type { Preferences, WorkoutConfig } from "./types";
 
 const PREFS_KEY = "timer:prefs";
-const SAVED_KEY = "timer:saved";
 const LAST_CONFIG_KEY = "timer:last-config";
 
 const defaultPrefs: Preferences = {
   soundEnabled: true,
   prepEnabled: true,
-  theme: "light",
 };
 
 function readJson<T>(key: string, fallback: T): T {
@@ -28,7 +26,11 @@ function writeJson<T>(key: string, value: T): void {
 }
 
 export function loadPreferences(): Preferences {
-  return { ...defaultPrefs, ...readJson(PREFS_KEY, defaultPrefs) };
+  const stored = readJson<Partial<Preferences>>(PREFS_KEY, defaultPrefs);
+  return {
+    soundEnabled: stored.soundEnabled ?? defaultPrefs.soundEnabled,
+    prepEnabled: stored.prepEnabled ?? defaultPrefs.prepEnabled,
+  };
 }
 
 export function savePreferences(prefs: Preferences): void {
@@ -41,24 +43,4 @@ export function loadLastConfig(): WorkoutConfig {
 
 export function saveLastConfig(config: WorkoutConfig): void {
   writeJson(LAST_CONFIG_KEY, config);
-}
-
-export function loadSavedWorkouts(): SavedWorkout[] {
-  return readJson<SavedWorkout[]>(SAVED_KEY, []);
-}
-
-export function saveWorkout(entry: SavedWorkout): SavedWorkout[] {
-  const existing = loadSavedWorkouts();
-  const next = [
-    entry,
-    ...existing.filter((item) => item.id !== entry.id),
-  ].slice(0, 8);
-  writeJson(SAVED_KEY, next);
-  return next;
-}
-
-export function deleteSavedWorkout(id: string): SavedWorkout[] {
-  const next = loadSavedWorkouts().filter((item) => item.id !== id);
-  writeJson(SAVED_KEY, next);
-  return next;
 }

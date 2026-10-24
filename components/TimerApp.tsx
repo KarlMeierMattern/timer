@@ -11,17 +11,13 @@ import {
 import { unlockAudio, playCompleteCue, playPhaseCue } from "@/lib/audio";
 import { DEFAULT_EMOM } from "@/lib/presets";
 import {
-  deleteSavedWorkout,
   loadLastConfig,
   loadPreferences,
-  loadSavedWorkouts,
   saveLastConfig,
   savePreferences,
-  saveWorkout,
 } from "@/lib/storage";
-import type { Preferences, SavedWorkout, SessionClock, WorkoutConfig } from "@/lib/types";
+import type { Preferences, SessionClock, WorkoutConfig } from "@/lib/types";
 import { useWakeLock } from "@/hooks/useWakeLock";
-import { applyTheme } from "@/lib/theme";
 import { Runner } from "./Runner";
 import { Setup } from "./Setup";
 
@@ -33,9 +29,7 @@ export function TimerApp() {
   const [prefs, setPrefs] = useState<Preferences>({
     soundEnabled: true,
     prepEnabled: true,
-    theme: "light",
   });
-  const [saved, setSaved] = useState<SavedWorkout[]>([]);
   const [clock, setClock] = useState<SessionClock | null>(null);
   const [nowMs, setNowMs] = useState(0);
   const [flash, setFlash] = useState(false);
@@ -57,18 +51,11 @@ export function TimerApp() {
   useEffect(() => {
     const storedConfig = loadLastConfig();
     const storedPrefs = loadPreferences();
-    const storedWorkouts = loadSavedWorkouts();
     queueMicrotask(() => {
       setConfig(storedConfig);
       setPrefs(storedPrefs);
-      setSaved(storedWorkouts);
-      applyTheme(storedPrefs.theme);
     });
   }, []);
-
-  useEffect(() => {
-    applyTheme(prefs.theme);
-  }, [prefs.theme]);
 
   const notifyPhaseChange = useCallback((phase: string) => {
     setFlash(true);
@@ -136,25 +123,12 @@ export function TimerApp() {
     lastPhaseRef.current = null;
   }, []);
 
-  const handleSaveWorkout = useCallback(
-    (name: string) => {
-      const entry: SavedWorkout = {
-        id: `saved-${Date.now()}`,
-        name,
-        config: { ...config, name, id: `saved-${Date.now()}` },
-      };
-      setSaved(saveWorkout(entry));
-    },
-    [config],
-  );
-
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
       {screen === "setup" ? (
         <Setup
           config={config}
           prefs={prefs}
-          saved={saved}
           onConfigChange={(next) => {
             setConfig(next);
             saveLastConfig(next);
@@ -163,16 +137,7 @@ export function TimerApp() {
             setPrefs(next);
             savePreferences(next);
           }}
-          onSaveWorkout={handleSaveWorkout}
-          onLoadSaved={(workout) => {
-            setConfig(workout.config);
-            saveLastConfig(workout.config);
-          }}
-          onDeleteSaved={(id) => setSaved(deleteSavedWorkout(id))}
           onStart={() => void handleStart()}
-          onTestSound={() => {
-            void unlockAudio().then(() => playPhaseCue());
-          }}
         />
       ) : (
         clock && (

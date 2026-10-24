@@ -1,75 +1,62 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { PRESET_OPTIONS } from "@/lib/presets";
 import { formatDurationLabel } from "@/lib/format";
-import type { Preferences, SavedWorkout, WorkoutConfig } from "@/lib/types";
+import type { Preferences, WorkoutConfig } from "@/lib/types";
 import { SegmentedControl } from "./SegmentedControl";
 import { Stepper } from "./Stepper";
 
 interface SetupProps {
   config: WorkoutConfig;
   prefs: Preferences;
-  saved: SavedWorkout[];
   onConfigChange: (config: WorkoutConfig) => void;
   onPrefsChange: (prefs: Preferences) => void;
-  onSaveWorkout: (name: string) => void;
-  onLoadSaved: (workout: SavedWorkout) => void;
-  onDeleteSaved: (id: string) => void;
   onStart: () => void;
-  onTestSound: () => void;
 }
 
 function presetIdForConfig(config: WorkoutConfig): string {
-  if (config.mode === "timer") return "timer";
-  if (config.restPlacement === "afterEachRound") return "tabata";
-  return "emom";
+  return config.mode === "timer" ? "timer" : "emom";
 }
 
 export function Setup({
   config,
   prefs,
-  saved,
   onConfigChange,
   onPrefsChange,
-  onSaveWorkout,
-  onLoadSaved,
-  onDeleteSaved,
   onStart,
-  onTestSound,
 }: SetupProps) {
-  const [customName, setCustomName] = useState(config.name);
-  const activePreset = useMemo(() => presetIdForConfig(config), [config]);
+  const activePreset = presetIdForConfig(config);
 
   const setPreset = (id: string) => {
     const preset = PRESET_OPTIONS.find((item) => item.id === id);
     if (!preset) return;
-    const next = { ...preset.config, id: `custom-${Date.now()}` };
-    setCustomName(next.name);
-    onConfigChange(next);
+    onConfigChange({ ...preset.config, id: `custom-${Date.now()}` });
   };
 
   const patch = (partial: Partial<WorkoutConfig>) => {
-    onConfigChange({ ...config, ...partial, name: customName || config.name });
+    onConfigChange({ ...config, ...partial });
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6">
-      <header>
+    <div className="flex min-h-0 flex-1 flex-col gap-8">
+      <header className="pt-1">
         <p className="text-xs uppercase tracking-[0.14em] text-secondary">
           Workout timer
         </p>
-        <h1 className="mt-1 text-2xl font-medium tracking-tight">Timer</h1>
+        <h1 className="mt-2 text-[1.75rem] font-medium tracking-tight">
+          Timer
+        </h1>
       </header>
 
       <SegmentedControl
         options={PRESET_OPTIONS.map((p) => ({ id: p.id, label: p.label }))}
         value={activePreset}
         onChange={setPreset}
+        columns={2}
       />
 
       {config.mode === "workout" ? (
-        <section className="rounded-md border border-border bg-surface px-4">
+        <section className="rounded-lg border border-border bg-surface px-4">
           <Stepper
             label="Work"
             displayValue={formatDurationLabel(config.workSeconds)}
@@ -109,30 +96,26 @@ export function Setup({
             onIncrease={() =>
               patch({ blockRepeats: Math.min(20, config.blockRepeats + 1) })
             }
+            isLast
           />
         </section>
       ) : (
-        <section className="rounded-md border border-border bg-surface px-4">
-          <div className="flex items-center justify-between gap-3 border-b border-border py-3">
+        <section className="rounded-lg border border-border bg-surface px-4">
+          <div className="flex flex-col gap-4 border-b border-border py-4">
             <span className="text-xs uppercase tracking-[0.12em] text-secondary">
               Direction
             </span>
-            <div className="grid grid-cols-2 gap-1 rounded-md border border-border p-1">
-              {(["down", "up"] as const).map((direction) => (
-                <button
-                  key={direction}
-                  type="button"
-                  onClick={() => patch({ timerDirection: direction })}
-                  className={`h-9 rounded-[4px] text-sm capitalize ${
-                    config.timerDirection === direction
-                      ? "bg-foreground text-background"
-                      : "text-secondary"
-                  }`}
-                >
-                  {direction}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={[
+                { id: "down", label: "Down" },
+                { id: "up", label: "Up" },
+              ]}
+              value={config.timerDirection}
+              onChange={(id) =>
+                patch({ timerDirection: id as "down" | "up" })
+              }
+              columns={2}
+            />
           </div>
           {config.timerDirection === "down" && (
             <Stepper
@@ -148,89 +131,14 @@ export function Setup({
                   timerSeconds: Math.min(3600, config.timerSeconds + 5),
                 })
               }
+              isLast
             />
           )}
         </section>
       )}
 
-      <section className="flex flex-col gap-3">
-        <label className="text-xs uppercase tracking-[0.12em] text-secondary">
-          Name
-        </label>
-        <input
-          value={customName}
-          onChange={(e) => {
-            setCustomName(e.target.value);
-            onConfigChange({ ...config, name: e.target.value });
-          }}
-          className="h-12 rounded-md border border-border bg-surface px-3 font-sans text-base outline-none focus:border-foreground"
-          placeholder="Workout name"
-        />
-        <button
-          type="button"
-          onClick={() => onSaveWorkout(customName || "Custom")}
-          className="h-12 rounded-md border border-border text-sm text-secondary"
-        >
-          Save to this phone
-        </button>
-      </section>
-
-      {saved.length > 0 && (
-        <section>
-          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-secondary">
-            Saved
-          </p>
-          <ul className="flex flex-col gap-2">
-            {saved.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center gap-2 rounded-md border border-border bg-surface p-2"
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCustomName(item.name);
-                    onLoadSaved(item);
-                  }}
-                  className="min-h-11 flex-1 text-left px-2 text-sm"
-                >
-                  {item.name}
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Delete ${item.name}`}
-                  onClick={() => onDeleteSaved(item.id)}
-                  className="h-11 w-11 text-secondary"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section className="flex flex-col gap-2 border-t border-border pt-4">
-        <div className="flex items-center justify-between gap-3 py-1">
-          <span className="text-sm text-secondary">Appearance</span>
-          <div className="grid grid-cols-2 gap-1 rounded-md border border-border p-1">
-            {(["light", "dark"] as const).map((theme) => (
-              <button
-                key={theme}
-                type="button"
-                onClick={() => onPrefsChange({ ...prefs, theme })}
-                className={`h-9 rounded-[4px] px-3 text-sm capitalize ${
-                  prefs.theme === theme
-                    ? "bg-foreground text-background"
-                    : "text-secondary"
-                }`}
-              >
-                {theme}
-              </button>
-            ))}
-          </div>
-        </div>
-        <label className="flex items-center justify-between text-sm">
+      <section className="flex flex-col gap-1 rounded-lg border border-border px-4 py-1">
+        <label className="flex min-h-12 items-center justify-between gap-4 text-sm">
           <span className="text-secondary">3s get ready</span>
           <input
             type="checkbox"
@@ -241,34 +149,23 @@ export function Setup({
             className="h-5 w-5 accent-foreground"
           />
         </label>
-        <div className="flex items-center justify-between gap-3 text-sm">
+        <label className="flex min-h-12 items-center justify-between gap-4 border-t border-border text-sm">
           <span className="text-secondary">Sound</span>
-          <div className="flex items-center gap-3">
-            {prefs.soundEnabled && (
-              <button
-                type="button"
-                onClick={onTestSound}
-                className="text-xs uppercase tracking-[0.1em] text-secondary underline-offset-2 hover:text-foreground hover:underline"
-              >
-                Test
-              </button>
-            )}
-            <input
-              type="checkbox"
-              checked={prefs.soundEnabled}
-              onChange={(e) =>
-                onPrefsChange({ ...prefs, soundEnabled: e.target.checked })
-              }
-              className="h-5 w-5 accent-foreground"
-            />
-          </div>
-        </div>
+          <input
+            type="checkbox"
+            checked={prefs.soundEnabled}
+            onChange={(e) =>
+              onPrefsChange({ ...prefs, soundEnabled: e.target.checked })
+            }
+            className="h-5 w-5 accent-foreground"
+          />
+        </label>
       </section>
 
       <button
         type="button"
         onClick={onStart}
-        className="mt-auto h-12 w-full rounded-md bg-foreground text-base font-medium text-background"
+        className="mt-auto h-12 w-full rounded-lg bg-foreground text-base font-medium text-background"
       >
         Start
       </button>

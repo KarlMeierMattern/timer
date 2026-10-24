@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     default: APP_NAME,
     template: `%s · ${APP_NAME}`,
   },
-  description: "Minimal workout timer for EMOM, Tabata, and simple intervals.",
+  description: "Minimal workout timer for EMOM and simple intervals.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -44,17 +44,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      data-theme="light"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      suppressHydrationWarning
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var p=JSON.parse(localStorage.getItem("timer:prefs")||"{}");var t=p.theme==="dark"?"dark":"light";document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t;var c=t==="dark"?"#000000":"#ffffff";var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c);}catch(e){}})();`,
-          }}
-        />
-      </head>
       <body className="min-h-full bg-background text-foreground">
         <SerwistProvider swUrl="/sw.js">{children}</SerwistProvider>
       </body>

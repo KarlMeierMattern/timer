@@ -131,7 +131,11 @@ export function TimerApp() {
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
-      <AppNav prefs={prefs} onPrefsChange={handlePrefsChange} />
+      <AppNav
+        prefs={prefs}
+        onPrefsChange={handlePrefsChange}
+        showTitle={screen === "setup"}
+      />
       <div className="flex min-h-0 flex-1 flex-col">
         {screen === "setup" ? (
           <Setup

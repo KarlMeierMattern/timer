@@ -34,15 +34,6 @@ export function Setup({ config, onConfigChange, onStart }: SetupProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <header className="pt-1">
-        <p className="text-xs uppercase tracking-[0.14em] text-secondary">
-          Workout timer
-        </p>
-        <h1 className="mt-2 text-[1.75rem] font-medium tracking-tight">
-          Timer
-        </h1>
-      </header>
-
       <SegmentedControl
         options={PRESET_OPTIONS.map((p) => ({ id: p.id, label: p.label }))}
         value={activePreset}

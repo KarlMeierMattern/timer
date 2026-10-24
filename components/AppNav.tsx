@@ -6,25 +6,9 @@ import { SettingsMenu } from "./SettingsMenu";
 interface AppNavProps {
   prefs: Preferences;
   onPrefsChange: (prefs: Preferences) => void;
-  showTitle?: boolean;
 }
 
-export function AppNav({
-  prefs,
-  onPrefsChange,
-  showTitle = true,
-}: AppNavProps) {
-  if (!showTitle) {
-    return (
-      <nav
-        className="mb-6 flex justify-end"
-        aria-label="App settings"
-      >
-        <SettingsMenu prefs={prefs} onPrefsChange={onPrefsChange} />
-      </nav>
-    );
-  }
-
+export function AppNav({ prefs, onPrefsChange }: AppNavProps) {
   return (
     <nav className="mb-6" aria-label="App">
       <p className="text-xs uppercase tracking-[0.14em] text-secondary">

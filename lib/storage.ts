@@ -2,11 +2,12 @@ import { DEFAULT_EMOM, DEFAULT_TIMER } from "./presets";
 import type { Preferences, WorkoutConfig } from "./types";
 
 const PREFS_KEY = "timer:prefs";
+const PREFS_DEFAULTS_FLAG = "timer:prefs-defaults-v2";
 const EMOM_CONFIG_KEY = "timer:emom-config";
 const TIMER_CONFIG_KEY = "timer:timer-config";
 const LEGACY_CONFIG_KEY = "timer:last-config";
 
-const defaultPrefs: Preferences = {
+export const DEFAULT_PREFERENCES: Preferences = {
   soundEnabled: true,
   prepEnabled: true,
 };
@@ -46,11 +47,26 @@ function migrateLegacyConfig(): void {
   window.localStorage.removeItem(LEGACY_CONFIG_KEY);
 }
 
+function migratePreferenceDefaults(): void {
+  if (typeof window === "undefined") return;
+  if (window.localStorage.getItem(PREFS_DEFAULTS_FLAG)) return;
+
+  const prefs: Preferences = {
+    ...DEFAULT_PREFERENCES,
+    ...readJson<Partial<Preferences>>(PREFS_KEY, {}),
+    soundEnabled: true,
+    prepEnabled: true,
+  };
+  writeJson(PREFS_KEY, prefs);
+  window.localStorage.setItem(PREFS_DEFAULTS_FLAG, "1");
+}
+
 export function loadPreferences(): Preferences {
-  const stored = readJson<Partial<Preferences>>(PREFS_KEY, defaultPrefs);
+  migratePreferenceDefaults();
+  const stored = readJson<Partial<Preferences>>(PREFS_KEY, {});
   return {
-    soundEnabled: stored.soundEnabled ?? defaultPrefs.soundEnabled,
-    prepEnabled: stored.prepEnabled ?? defaultPrefs.prepEnabled,
+    soundEnabled: stored.soundEnabled ?? DEFAULT_PREFERENCES.soundEnabled,
+    prepEnabled: stored.prepEnabled ?? DEFAULT_PREFERENCES.prepEnabled,
   };
 }
 

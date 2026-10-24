@@ -82,7 +82,7 @@ export function SettingsMenu({ prefs, onPrefsChange }: SettingsMenuProps) {
             className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-3 text-sm border-t border-border"
             role="menuitem"
           >
-            <span>Sound</span>
+            <span>Timer sounds</span>
             <input
               type="checkbox"
               checked={prefs.soundEnabled}

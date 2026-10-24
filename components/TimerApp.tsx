@@ -11,6 +11,7 @@ import {
 import { unlockAudio, playCompleteCue, playPhaseCue } from "@/lib/audio";
 import { DEFAULT_EMOM } from "@/lib/presets";
 import {
+  DEFAULT_PREFERENCES,
   loadEmomConfig,
   loadPreferences,
   saveConfig,
@@ -27,10 +28,7 @@ type Screen = "setup" | "run";
 export function TimerApp() {
   const [screen, setScreen] = useState<Screen>("setup");
   const [config, setConfig] = useState<WorkoutConfig>(DEFAULT_EMOM);
-  const [prefs, setPrefs] = useState<Preferences>({
-    soundEnabled: true,
-    prepEnabled: true,
-  });
+  const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [clock, setClock] = useState<SessionClock | null>(null);
   const [nowMs, setNowMs] = useState(0);
   const [flash, setFlash] = useState(false);

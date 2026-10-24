@@ -2,6 +2,7 @@
 
 import { PRESET_OPTIONS } from "@/lib/presets";
 import { formatDurationLabel } from "@/lib/format";
+import { loadEmomConfig, loadTimerConfig } from "@/lib/storage";
 import type { Preferences, WorkoutConfig } from "@/lib/types";
 import { SegmentedControl } from "./SegmentedControl";
 import { Stepper } from "./Stepper";
@@ -28,9 +29,11 @@ export function Setup({
   const activePreset = presetIdForConfig(config);
 
   const setPreset = (id: string) => {
-    const preset = PRESET_OPTIONS.find((item) => item.id === id);
-    if (!preset) return;
-    onConfigChange({ ...preset.config, id: `custom-${Date.now()}` });
+    if (id === "timer") {
+      onConfigChange(loadTimerConfig());
+      return;
+    }
+    onConfigChange(loadEmomConfig());
   };
 
   const patch = (partial: Partial<WorkoutConfig>) => {

@@ -1,8 +1,10 @@
-import { DEFAULT_EMOM } from "./presets";
+import { DEFAULT_EMOM, DEFAULT_TIMER } from "./presets";
 import type { Preferences, WorkoutConfig } from "./types";
 
 const PREFS_KEY = "timer:prefs";
-const LAST_CONFIG_KEY = "timer:last-config";
+const EMOM_CONFIG_KEY = "timer:emom-config";
+const TIMER_CONFIG_KEY = "timer:timer-config";
+const LEGACY_CONFIG_KEY = "timer:last-config";
 
 const defaultPrefs: Preferences = {
   soundEnabled: true,
@@ -25,6 +27,25 @@ function writeJson<T>(key: string, value: T): void {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
+function migrateLegacyConfig(): void {
+  if (typeof window === "undefined") return;
+  const legacy = window.localStorage.getItem(LEGACY_CONFIG_KEY);
+  if (!legacy) return;
+
+  try {
+    const parsed = JSON.parse(legacy) as WorkoutConfig;
+    if (parsed.mode === "timer") {
+      writeJson(TIMER_CONFIG_KEY, parsed);
+    } else {
+      writeJson(EMOM_CONFIG_KEY, parsed);
+    }
+  } catch {
+    // ignore invalid legacy data
+  }
+
+  window.localStorage.removeItem(LEGACY_CONFIG_KEY);
+}
+
 export function loadPreferences(): Preferences {
   const stored = readJson<Partial<Preferences>>(PREFS_KEY, defaultPrefs);
   return {
@@ -37,10 +58,50 @@ export function savePreferences(prefs: Preferences): void {
   writeJson(PREFS_KEY, prefs);
 }
 
-export function loadLastConfig(): WorkoutConfig {
-  return readJson(LAST_CONFIG_KEY, DEFAULT_EMOM);
+export function loadEmomConfig(): WorkoutConfig {
+  migrateLegacyConfig();
+  const stored = readJson<Partial<WorkoutConfig> | null>(EMOM_CONFIG_KEY, null);
+  return {
+    ...DEFAULT_EMOM,
+    ...stored,
+    mode: "workout",
+    name: "EMOM",
+    restPlacement: "afterBlock",
+  };
 }
 
-export function saveLastConfig(config: WorkoutConfig): void {
-  writeJson(LAST_CONFIG_KEY, config);
+export function loadTimerConfig(): WorkoutConfig {
+  migrateLegacyConfig();
+  const stored = readJson<Partial<WorkoutConfig> | null>(TIMER_CONFIG_KEY, null);
+  return {
+    ...DEFAULT_TIMER,
+    ...stored,
+    mode: "timer",
+    name: "Timer",
+  };
+}
+
+export function saveEmomConfig(config: WorkoutConfig): void {
+  writeJson(EMOM_CONFIG_KEY, {
+    ...config,
+    mode: "workout",
+    name: "EMOM",
+    restPlacement: "afterBlock",
+  });
+}
+
+export function saveTimerConfig(config: WorkoutConfig): void {
+  writeJson(TIMER_CONFIG_KEY, {
+    ...config,
+    mode: "timer",
+    name: "Timer",
+  });
+}
+
+export function saveConfig(config: WorkoutConfig): void {
+  if (config.mode === "timer") {
+    saveTimerConfig(config);
+  } else {
+    saveEmomConfig(config);
+  }
 }

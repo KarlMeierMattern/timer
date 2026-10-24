@@ -11,9 +11,9 @@ import {
 import { unlockAudio, playCompleteCue, playPhaseCue } from "@/lib/audio";
 import { DEFAULT_EMOM } from "@/lib/presets";
 import {
-  loadLastConfig,
+  loadEmomConfig,
   loadPreferences,
-  saveLastConfig,
+  saveConfig,
   savePreferences,
 } from "@/lib/storage";
 import type { Preferences, SessionClock, WorkoutConfig } from "@/lib/types";
@@ -49,10 +49,9 @@ export function TimerApp() {
   }, [prefs.soundEnabled]);
 
   useEffect(() => {
-    const storedConfig = loadLastConfig();
     const storedPrefs = loadPreferences();
     queueMicrotask(() => {
-      setConfig(storedConfig);
+      setConfig(loadEmomConfig());
       setPrefs(storedPrefs);
     });
   }, []);
@@ -106,7 +105,7 @@ export function TimerApp() {
       await unlockAudio();
     }
     const session = createSession(config, Date.now(), prefs.prepEnabled);
-    saveLastConfig(config);
+    saveConfig(config);
     savePreferences(prefs);
     lastPhaseRef.current = null;
     setClock(session);
@@ -120,6 +119,7 @@ export function TimerApp() {
   const handleEnd = useCallback(() => {
     setClock(null);
     setScreen("setup");
+    setConfig(loadEmomConfig());
     lastPhaseRef.current = null;
   }, []);
 
@@ -131,7 +131,7 @@ export function TimerApp() {
           prefs={prefs}
           onConfigChange={(next) => {
             setConfig(next);
-            saveLastConfig(next);
+            saveConfig(next);
           }}
           onPrefsChange={(next) => {
             setPrefs(next);

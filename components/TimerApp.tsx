@@ -18,6 +18,7 @@ import {
 } from "@/lib/storage";
 import type { Preferences, SessionClock, WorkoutConfig } from "@/lib/types";
 import { useWakeLock } from "@/hooks/useWakeLock";
+import { AppNav } from "./AppNav";
 import { Runner } from "./Runner";
 import { Setup } from "./Setup";
 
@@ -123,25 +124,27 @@ export function TimerApp() {
     lastPhaseRef.current = null;
   }, []);
 
+  const handlePrefsChange = useCallback((next: Preferences) => {
+    setPrefs(next);
+    savePreferences(next);
+  }, []);
+
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
-      {screen === "setup" ? (
-        <Setup
-          config={config}
-          prefs={prefs}
-          onConfigChange={(next) => {
-            setConfig(next);
-            saveConfig(next);
-          }}
-          onPrefsChange={(next) => {
-            setPrefs(next);
-            savePreferences(next);
-          }}
-          onStart={() => void handleStart()}
-        />
-      ) : (
-        clock && (
-          <Runner
+      <AppNav prefs={prefs} onPrefsChange={handlePrefsChange} />
+      <div className="flex min-h-0 flex-1 flex-col">
+        {screen === "setup" ? (
+          <Setup
+            config={config}
+            onConfigChange={(next) => {
+              setConfig(next);
+              saveConfig(next);
+            }}
+            onStart={() => void handleStart()}
+          />
+        ) : (
+          clock && (
+            <Runner
             clock={clock}
             nowMs={nowMs}
             flash={flash}
@@ -178,9 +181,10 @@ export function TimerApp() {
               });
             }}
             onEnd={handleEnd}
-          />
-        )
-      )}
+            />
+          )
+        )}
+      </div>
     </div>
   );
 }

@@ -3,15 +3,13 @@
 import { PRESET_OPTIONS } from "@/lib/presets";
 import { formatDurationLabel } from "@/lib/format";
 import { loadEmomConfig, loadTimerConfig } from "@/lib/storage";
-import type { Preferences, WorkoutConfig } from "@/lib/types";
+import type { WorkoutConfig } from "@/lib/types";
 import { SegmentedControl } from "./SegmentedControl";
 import { Stepper } from "./Stepper";
 
 interface SetupProps {
   config: WorkoutConfig;
-  prefs: Preferences;
   onConfigChange: (config: WorkoutConfig) => void;
-  onPrefsChange: (prefs: Preferences) => void;
   onStart: () => void;
 }
 
@@ -19,13 +17,7 @@ function presetIdForConfig(config: WorkoutConfig): string {
   return config.mode === "timer" ? "timer" : "emom";
 }
 
-export function Setup({
-  config,
-  prefs,
-  onConfigChange,
-  onPrefsChange,
-  onStart,
-}: SetupProps) {
+export function Setup({ config, onConfigChange, onStart }: SetupProps) {
   const activePreset = presetIdForConfig(config);
 
   const setPreset = (id: string) => {
@@ -139,31 +131,6 @@ export function Setup({
           )}
         </section>
       )}
-
-      <section className="flex flex-col gap-1 rounded-lg border border-border px-4 py-1">
-        <label className="flex min-h-12 items-center justify-between gap-4 text-sm">
-          <span className="text-secondary">3s get ready</span>
-          <input
-            type="checkbox"
-            checked={prefs.prepEnabled}
-            onChange={(e) =>
-              onPrefsChange({ ...prefs, prepEnabled: e.target.checked })
-            }
-            className="h-5 w-5 accent-foreground"
-          />
-        </label>
-        <label className="flex min-h-12 items-center justify-between gap-4 border-t border-border text-sm">
-          <span className="text-secondary">Sound</span>
-          <input
-            type="checkbox"
-            checked={prefs.soundEnabled}
-            onChange={(e) =>
-              onPrefsChange({ ...prefs, soundEnabled: e.target.checked })
-            }
-            className="h-5 w-5 accent-foreground"
-          />
-        </label>
-      </section>
 
       <button
         type="button"

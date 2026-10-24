@@ -64,7 +64,7 @@ export function Runner({
         />
       </div>
 
-      <div className="flex flex-1 flex-col justify-center gap-5 px-1 pt-8">
+      <div className="flex flex-1 flex-col justify-center gap-5 px-1 pt-2">
         <p
           className={`text-center text-xs uppercase tracking-[0.16em] ${
             isRest ? "text-accent" : "text-secondary"

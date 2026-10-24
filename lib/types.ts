@@ -48,9 +48,12 @@ export interface SessionClock {
   pauseBeginMs: number | null;
 }
 
+export type Theme = "light" | "dark";
+
 export interface Preferences {
   soundEnabled: boolean;
   prepEnabled: boolean;
+  theme: Theme;
 }
 
 export interface SavedWorkout {

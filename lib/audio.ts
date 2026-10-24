@@ -1,47 +1,70 @@
 let audioContext: AudioContext | null = null;
 
-function getContext(): AudioContext | null {
+function getAudioContextClass(): typeof AudioContext | null {
   if (typeof window === "undefined") return null;
+  return (
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext: typeof AudioContext })
+      .webkitAudioContext ||
+    null
+  );
+}
+
+async function ensureContext(): Promise<AudioContext | null> {
+  const Ctx = getAudioContextClass();
+  if (!Ctx) return null;
+
   if (!audioContext) {
-    const Ctx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    if (!Ctx) return null;
     audioContext = new Ctx();
   }
+
+  if (audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+
   return audioContext;
 }
 
-export function unlockAudio(): void {
-  const ctx = getContext();
-  if (!ctx) return;
-  if (ctx.state === "suspended") {
-    void ctx.resume();
-  }
-}
-
-function beep(frequency: number, durationMs: number, gain = 0.15): void {
-  const ctx = getContext();
+async function playTone(
+  frequency: number,
+  durationMs: number,
+  peakGain = 0.4,
+): Promise<void> {
+  const ctx = await ensureContext();
   if (!ctx) return;
 
   const oscillator = ctx.createOscillator();
-  const volume = ctx.createGain();
+  const gain = ctx.createGain();
   oscillator.type = "sine";
   oscillator.frequency.value = frequency;
-  volume.gain.value = gain;
-  oscillator.connect(volume);
-  volume.connect(ctx.destination);
-  const now = ctx.currentTime;
-  oscillator.start(now);
-  oscillator.stop(now + durationMs / 1000);
+
+  const start = ctx.currentTime;
+  const end = start + durationMs / 1000;
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(peakGain, start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  oscillator.start(start);
+  oscillator.stop(end + 0.05);
+
+  await new Promise<void>((resolve) => {
+    oscillator.onended = () => resolve();
+    window.setTimeout(resolve, durationMs + 80);
+  });
 }
 
-export function playPhaseCue(): void {
-  beep(880, 120);
+/** Call from a tap handler before the workout starts (required on iOS). */
+export async function unlockAudio(): Promise<void> {
+  await playTone(440, 40, 0.02);
 }
 
-export function playCompleteCue(): void {
-  beep(660, 200);
-  window.setTimeout(() => beep(880, 280, 0.2), 220);
+export async function playPhaseCue(): Promise<void> {
+  await playTone(880, 160, 0.45);
+}
+
+export async function playCompleteCue(): Promise<void> {
+  await playTone(660, 220, 0.45);
+  await playTone(880, 320, 0.5);
 }

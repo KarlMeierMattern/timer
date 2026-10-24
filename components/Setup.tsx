@@ -17,6 +17,7 @@ interface SetupProps {
   onLoadSaved: (workout: SavedWorkout) => void;
   onDeleteSaved: (id: string) => void;
   onStart: () => void;
+  onTestSound: () => void;
 }
 
 function presetIdForConfig(config: WorkoutConfig): string {
@@ -35,6 +36,7 @@ export function Setup({
   onLoadSaved,
   onDeleteSaved,
   onStart,
+  onTestSound,
 }: SetupProps) {
   const [customName, setCustomName] = useState(config.name);
   const activePreset = useMemo(() => presetIdForConfig(config), [config]);
@@ -209,6 +211,25 @@ export function Setup({
       )}
 
       <section className="flex flex-col gap-2 border-t border-border pt-4">
+        <div className="flex items-center justify-between gap-3 py-1">
+          <span className="text-sm text-secondary">Appearance</span>
+          <div className="grid grid-cols-2 gap-1 rounded-md border border-border p-1">
+            {(["light", "dark"] as const).map((theme) => (
+              <button
+                key={theme}
+                type="button"
+                onClick={() => onPrefsChange({ ...prefs, theme })}
+                className={`h-9 rounded-[4px] px-3 text-sm capitalize ${
+                  prefs.theme === theme
+                    ? "bg-foreground text-background"
+                    : "text-secondary"
+                }`}
+              >
+                {theme}
+              </button>
+            ))}
+          </div>
+        </div>
         <label className="flex items-center justify-between text-sm">
           <span className="text-secondary">3s get ready</span>
           <input
@@ -220,17 +241,28 @@ export function Setup({
             className="h-5 w-5 accent-foreground"
           />
         </label>
-        <label className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between gap-3 text-sm">
           <span className="text-secondary">Sound</span>
-          <input
-            type="checkbox"
-            checked={prefs.soundEnabled}
-            onChange={(e) =>
-              onPrefsChange({ ...prefs, soundEnabled: e.target.checked })
-            }
-            className="h-5 w-5 accent-foreground"
-          />
-        </label>
+          <div className="flex items-center gap-3">
+            {prefs.soundEnabled && (
+              <button
+                type="button"
+                onClick={onTestSound}
+                className="text-xs uppercase tracking-[0.1em] text-secondary underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Test
+              </button>
+            )}
+            <input
+              type="checkbox"
+              checked={prefs.soundEnabled}
+              onChange={(e) =>
+                onPrefsChange({ ...prefs, soundEnabled: e.target.checked })
+              }
+              className="h-5 w-5 accent-foreground"
+            />
+          </div>
+        </div>
       </section>
 
       <button

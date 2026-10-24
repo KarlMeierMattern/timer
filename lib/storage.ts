@@ -8,6 +8,7 @@ const LAST_CONFIG_KEY = "timer:last-config";
 const defaultPrefs: Preferences = {
   soundEnabled: true,
   prepEnabled: true,
+  theme: "light",
 };
 
 function readJson<T>(key: string, fallback: T): T {

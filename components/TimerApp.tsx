@@ -21,6 +21,7 @@ import {
 } from "@/lib/storage";
 import type { Preferences, SavedWorkout, SessionClock, WorkoutConfig } from "@/lib/types";
 import { useWakeLock } from "@/hooks/useWakeLock";
+import { applyTheme } from "@/lib/theme";
 import { Runner } from "./Runner";
 import { Setup } from "./Setup";
 
@@ -32,15 +33,26 @@ export function TimerApp() {
   const [prefs, setPrefs] = useState<Preferences>({
     soundEnabled: true,
     prepEnabled: true,
+    theme: "light",
   });
   const [saved, setSaved] = useState<SavedWorkout[]>([]);
   const [clock, setClock] = useState<SessionClock | null>(null);
   const [nowMs, setNowMs] = useState(0);
   const [flash, setFlash] = useState(false);
   const lastPhaseRef = useRef<string | null>(null);
+  const clockRef = useRef<SessionClock | null>(null);
+  const soundEnabledRef = useRef(true);
 
   const running = screen === "run" && clock !== null;
   useWakeLock(running && clock !== null && !clock.isPaused);
+
+  useEffect(() => {
+    clockRef.current = clock;
+  }, [clock]);
+
+  useEffect(() => {
+    soundEnabledRef.current = prefs.soundEnabled;
+  }, [prefs.soundEnabled]);
 
   useEffect(() => {
     const storedConfig = loadLastConfig();
@@ -50,49 +62,73 @@ export function TimerApp() {
       setConfig(storedConfig);
       setPrefs(storedPrefs);
       setSaved(storedWorkouts);
+      applyTheme(storedPrefs.theme);
     });
   }, []);
 
   useEffect(() => {
-    if (!running || !clock) return undefined;
-    const id = window.setInterval(() => setNowMs(Date.now()), 100);
-    return () => window.clearInterval(id);
-  }, [running, clock]);
+    applyTheme(prefs.theme);
+  }, [prefs.theme]);
 
-  useEffect(() => {
-    if (!clock || screen !== "run") return;
-    const view = resolveSession(clock, nowMs);
-    if (!view) return;
-
-    const key = `${view.segmentIndex}-${view.segment.phase}`;
-    if (lastPhaseRef.current === null) {
-      lastPhaseRef.current = key;
-      return;
-    }
-    if (lastPhaseRef.current === key) return;
-
-    lastPhaseRef.current = key;
+  const notifyPhaseChange = useCallback((phase: string) => {
     setFlash(true);
     window.setTimeout(() => setFlash(false), 120);
 
-    if (!prefs.soundEnabled) return;
-    if (view.segment.phase === "done") {
-      playCompleteCue();
-    } else {
-      playPhaseCue();
-    }
-  }, [clock, nowMs, prefs.soundEnabled, screen]);
+    if (!soundEnabledRef.current) return;
 
-  const handleStart = useCallback(() => {
-    unlockAudio();
+    if (phase === "done") {
+      void playCompleteCue();
+    } else {
+      void playPhaseCue();
+    }
+  }, []);
+
+  const syncPhaseFromClock = useCallback(
+    (activeClock: SessionClock, atMs: number) => {
+      const view = resolveSession(activeClock, atMs);
+      if (!view) return;
+
+      const key = `${view.segmentIndex}-${view.segment.phase}`;
+      if (lastPhaseRef.current === null) {
+        lastPhaseRef.current = key;
+        return;
+      }
+      if (lastPhaseRef.current === key) return;
+
+      lastPhaseRef.current = key;
+      notifyPhaseChange(view.segment.phase);
+    },
+    [notifyPhaseChange],
+  );
+
+  useEffect(() => {
+    if (!running || !clock) return undefined;
+    const id = window.setInterval(() => {
+      const atMs = Date.now();
+      setNowMs(atMs);
+      const activeClock = clockRef.current;
+      if (activeClock) {
+        syncPhaseFromClock(activeClock, atMs);
+      }
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [running, clock, syncPhaseFromClock]);
+
+  const handleStart = useCallback(async () => {
+    if (prefs.soundEnabled) {
+      await unlockAudio();
+    }
     const session = createSession(config, Date.now(), prefs.prepEnabled);
     saveLastConfig(config);
     savePreferences(prefs);
     lastPhaseRef.current = null;
     setClock(session);
-    setNowMs(Date.now());
+    clockRef.current = session;
+    const atMs = Date.now();
+    setNowMs(atMs);
     setScreen("run");
-  }, [config, prefs]);
+    syncPhaseFromClock(session, atMs);
+  }, [config, prefs, syncPhaseFromClock]);
 
   const handleEnd = useCallback(() => {
     setClock(null);
@@ -133,7 +169,10 @@ export function TimerApp() {
             saveLastConfig(workout.config);
           }}
           onDeleteSaved={(id) => setSaved(deleteSavedWorkout(id))}
-          onStart={handleStart}
+          onStart={() => void handleStart()}
+          onTestSound={() => {
+            void unlockAudio().then(() => playPhaseCue());
+          }}
         />
       ) : (
         clock && (
@@ -146,17 +185,32 @@ export function TimerApp() {
                 current ? pauseSession(current, Date.now()) : current,
               )
             }
-            onResume={() => {
-              setNowMs(Date.now());
-              setClock((current) =>
-                current ? resumeSession(current, Date.now()) : current,
-              );
+            onResume={async () => {
+              if (prefs.soundEnabled) {
+                await unlockAudio();
+              }
+              const atMs = Date.now();
+              setNowMs(atMs);
+              setClock((current) => {
+                const next = current ? resumeSession(current, atMs) : current;
+                if (next) {
+                  clockRef.current = next;
+                  syncPhaseFromClock(next, atMs);
+                }
+                return next;
+              });
             }}
             onSkip={() => {
-              setNowMs(Date.now());
-              setClock((current) =>
-                current ? skipSegment(current, Date.now()) : current,
-              );
+              const atMs = Date.now();
+              setNowMs(atMs);
+              setClock((current) => {
+                const next = current ? skipSegment(current, atMs) : current;
+                if (next) {
+                  clockRef.current = next;
+                  syncPhaseFromClock(next, atMs);
+                }
+                return next;
+              });
             }}
             onEnd={handleEnd}
           />

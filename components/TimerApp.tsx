@@ -8,7 +8,12 @@ import {
   resumeSession,
   skipSegment,
 } from "@/lib/engine";
-import { unlockAudio, playCompleteCue, playPhaseCue } from "@/lib/audio";
+import {
+  unlockAudio,
+  playCompleteCue,
+  playCountdownTick,
+  playPhaseCue,
+} from "@/lib/audio";
 import { DEFAULT_EMOM } from "@/lib/presets";
 import {
   DEFAULT_PREFERENCES,
@@ -17,7 +22,7 @@ import {
   saveConfig,
   savePreferences,
 } from "@/lib/storage";
-import type { Preferences, SessionClock, WorkoutConfig } from "@/lib/types";
+import type { Phase, Preferences, SessionClock, WorkoutConfig } from "@/lib/types";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { AppNav } from "./AppNav";
 import { Runner } from "./Runner";
@@ -33,6 +38,7 @@ export function TimerApp() {
   const [nowMs, setNowMs] = useState(0);
   const [flash, setFlash] = useState(false);
   const lastPhaseRef = useRef<string | null>(null);
+  const lastCountdownSecondRef = useRef<number | null>(null);
   const clockRef = useRef<SessionClock | null>(null);
   const soundEnabledRef = useRef(true);
 
@@ -55,18 +61,38 @@ export function TimerApp() {
     });
   }, []);
 
-  const notifyPhaseChange = useCallback((phase: string) => {
+  const notifyPhaseChange = useCallback((phase: Phase) => {
     setFlash(true);
     window.setTimeout(() => setFlash(false), 120);
+    lastCountdownSecondRef.current = null;
 
     if (!soundEnabledRef.current) return;
 
     if (phase === "done") {
       void playCompleteCue();
     } else {
-      void playPhaseCue();
+      void playPhaseCue(phase);
     }
   }, []);
+
+  const syncCountdownSounds = useCallback(
+    (activeClock: SessionClock, atMs: number) => {
+      if (!soundEnabledRef.current || activeClock.isPaused) return;
+
+      const view = resolveSession(activeClock, atMs);
+      if (!view || view.segment.phase === "done") return;
+      if (!Number.isFinite(view.remainingMs)) return;
+
+      const displayedSecond = Math.ceil(view.remainingMs / 1000);
+      if (lastCountdownSecondRef.current === displayedSecond) return;
+
+      lastCountdownSecondRef.current = displayedSecond;
+      if (displayedSecond >= 1 && displayedSecond <= 3) {
+        void playCountdownTick(displayedSecond);
+      }
+    },
+    [],
+  );
 
   const syncPhaseFromClock = useCallback(
     (activeClock: SessionClock, atMs: number) => {
@@ -76,6 +102,7 @@ export function TimerApp() {
       const key = `${view.segmentIndex}-${view.segment.phase}`;
       if (lastPhaseRef.current === null) {
         lastPhaseRef.current = key;
+        lastCountdownSecondRef.current = null;
         return;
       }
       if (lastPhaseRef.current === key) return;
@@ -94,10 +121,11 @@ export function TimerApp() {
       const activeClock = clockRef.current;
       if (activeClock) {
         syncPhaseFromClock(activeClock, atMs);
+        syncCountdownSounds(activeClock, atMs);
       }
     }, 100);
     return () => window.clearInterval(id);
-  }, [running, clock, syncPhaseFromClock]);
+  }, [running, clock, syncPhaseFromClock, syncCountdownSounds]);
 
   const handleStart = useCallback(async () => {
     if (prefs.soundEnabled) {
@@ -107,6 +135,7 @@ export function TimerApp() {
     saveConfig(config);
     savePreferences(prefs);
     lastPhaseRef.current = null;
+    lastCountdownSecondRef.current = null;
     setClock(session);
     clockRef.current = session;
     const atMs = Date.now();
@@ -120,6 +149,7 @@ export function TimerApp() {
     setScreen("setup");
     setConfig(loadEmomConfig());
     lastPhaseRef.current = null;
+    lastCountdownSecondRef.current = null;
   }, []);
 
   const handlePrefsChange = useCallback((next: Preferences) => {
@@ -171,6 +201,7 @@ export function TimerApp() {
             onSkip={() => {
               const atMs = Date.now();
               setNowMs(atMs);
+              lastCountdownSecondRef.current = null;
               setClock((current) => {
                 const next = current ? skipSegment(current, atMs) : current;
                 if (next) {

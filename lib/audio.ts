@@ -1,5 +1,7 @@
 let audioContext: AudioContext | null = null;
 
+import type { Phase } from "./types";
+
 function getAudioContextClass(): typeof AudioContext | null {
   if (typeof window === "undefined") return null;
   return (
@@ -60,8 +62,30 @@ export async function unlockAudio(): Promise<void> {
   await playTone(440, 40, 0.02);
 }
 
-export async function playPhaseCue(): Promise<void> {
-  await playTone(880, 160, 0.45);
+export async function playPhaseCue(phase: Phase): Promise<void> {
+  switch (phase) {
+    case "work":
+      await playTone(880, 170, 0.45);
+      break;
+    case "rest":
+      await playTone(520, 200, 0.4);
+      break;
+    case "prep":
+      await playTone(660, 130, 0.35);
+      break;
+    case "timer":
+      await playTone(740, 150, 0.42);
+      break;
+    default:
+      await playTone(880, 160, 0.45);
+  }
+}
+
+/** Short tick for the last three displayed seconds of an interval. */
+export async function playCountdownTick(secondsLeft: number): Promise<void> {
+  const frequency = secondsLeft === 1 ? 880 : 660;
+  const gain = secondsLeft === 1 ? 0.32 : 0.22;
+  await playTone(frequency, 70, gain);
 }
 
 export async function playCompleteCue(): Promise<void> {
